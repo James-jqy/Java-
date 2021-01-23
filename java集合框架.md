@@ -535,5 +535,20 @@ CopyOnWrite容器有很多优点，但是同时也存在两个问题，即内存
   Iterator 接口，定义了遍历集合的方法，但它的实现则是集合实现类的责任。每个能够返回用于遍历的 Iterator 的集合类都有它自己的 Iterator 实现内部类。
 
   这就允许集合类去选择迭代器是 fail-fast 还是 fail-safe 的。比如，ArrayList 迭代器是 fail-fast 的，而 CopyOnWriteArrayList 迭代器是 fail-safe 的。
+### hashmap是线程安全的吗？不是线程安全的话，有什么问题？
+
+1. 多线程下扩容死循环 
+
+JDK1.7中的 HashMap 使用头插法插入元素，在多线程的环境下，扩容的时候有可能导致环形[链表]()的出现，形成死循环。因此，JDK1.8使用尾插法插入元素，在扩容时会保持[链表]()元素原本的顺序，不会出现环形[链表]()的问题。如果get一个在此[链表](https://www.nowcoder.com/jump/super-jump/word?word=链表)中不存在的key时，就会出现死循环了。如 get(11)时，就发生了死循环。
+
+2. 多线程的put可能导致元素的丢失 
+
+多线程同时执行 put 操作，如果计算出来的索引位置是相同的，那会造成前一个 key 被后一个 key 覆盖，从而导致元素的丢失。此问题在JDK 1.7和 JDK 1.8 中都存在。
+
+3. put和get并发时，可能导致get为null 
+
+线程1执行put时，因为元素个数超出threshold而导致rehash，线程2此时执行get，有可能导致这个问题。此问题在JDK 1.7和 JDK 1.8 中都存在。
+
+当rehash的时候，有一个时刻是将新创建的hashmap赋值给引用。那么此时这个hashmap中什么数据都没有。则此时再去get的话。就会get到一个null值。
 
  
